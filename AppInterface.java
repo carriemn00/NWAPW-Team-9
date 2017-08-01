@@ -1,94 +1,227 @@
-/* Guitarist App Interface
- * Carrie Nguyen
- * 7/24/17
+ /* Guitar App Interface
+ *  Team 9
  */
 
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
-import java.awt.event.*;      
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.awt.Font;
 
-public class AppInterface implements ActionListener {
+public class AppInterface implements ActionListener{
 	JFrame frame;
-	JPanel contentPane;
-	JLabel label;
-	JButton button;
-
-    public AppInterface(){
-        /* Create and set up the frame */
-        frame = new JFrame("Beginning Guitarists App");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        /* Create a content pane */
-        contentPane = new JPanel();
-
-		/* Create and add label */
-	    label = new JLabel("Welcome.");
-        contentPane.add(label);
-
-		/* Create and add button */
-        button = new JButton("Begin audio capture");
-    	button.setActionCommand("Begin audio capture");
-    	button.addActionListener(this);
-    	contentPane.add(button);
-    	
-    	button = new JButton("Help");
-    	button.setActionCommand("Help");
-    	button.addActionListener(this);
-    	contentPane.add(button);
-
-		/* Add content pane to frame */
-        frame.setContentPane(contentPane);
-
-        /* Size and then display the frame. */
-        frame.pack();
-	frame.setSize(512,512);
-        frame.setVisible(true);
-    }
+    JLabel label1;
+    JLabel label2;
+    JLabel imageLabel;
+    JPanel utilPanel = new JPanel();
+    JPanel outputPanel = new JPanel();
+    JPanel imagePanel = new JPanel();
+    int mixerChoice = 0;
     
+    TestSoundRecordingUtil output = new TestSoundRecordingUtil();
+    JButton tuneButton = new JButton("Tune");
+    JButton startButton = new JButton("Start");
     
-    /**
-     * Handle button click action event
-     * pre: none
-     * post: Clicked button has different text and label
-     * displays message depending on when the button was clicked.
-     */
-    public void actionPerformed(ActionEvent event) {
-        String eventName = event.getActionCommand();
-       
-        	if (eventName.equals("Begin audio capture")) {
-        		// call audio capture method
-        	label.setText("Capturing audio...");
-        	button.setText("Stop audio capture");
-        	button.setActionCommand("Stop audio capture");
-        	
-        } else if (eventName.equals("Help")) {
-        	// call Help method
-		Help output = new Help();
-        	String labelOutput = output.getHelp();
-        	label.setText(labelOutput);
-        } else {
-        	label.setText("Audio capture stopped.");
-        	// call stop audio method
-        }
-    }
-
-
-    /**
-     * Create and show the GUI.
-     */
-    private static void runGUI() {
-        JFrame.setDefaultLookAndFeelDecorated(true);
-
-        AppInterface greeting = new AppInterface();
-    }
-     
 
     public static void main(String[] args) {
-        /* Methods that create and show a GUI should be 
-           run from an event-dispatching thread */
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                runGUI();
-            }
-        });
+        AppInterface gui = new AppInterface();
+        gui.go();
     }
+ 
+    /**
+     * Declare and initialize GUI components
+     */
+    public void go(){
+        
+    	frame = new JFrame("Beginning Guitarists App");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+       
+        startButton.addActionListener(new StartListener());
+ 
+        JButton resetButton = new JButton("Reset");
+        resetButton.addActionListener(new ResetListener());
+        
+        JButton helpButton = new JButton("Help");
+        helpButton.addActionListener(new HelpListener());
+        
+        tuneButton.addActionListener(new TunerListener());
+ 
+        label1 = new JLabel();
+        		label1.setHorizontalAlignment(SwingConstants.CENTER);
+        		label1.setVerticalAlignment(SwingConstants.CENTER);
+        	    //label1.setText("This is Label1");
+        label2 = new JLabel();
+        		Help output = new Help();
+        		String labelOutput = output.getHelp();
+        		label2.setHorizontalAlignment(SwingConstants.CENTER);
+        		label2.setVerticalAlignment(SwingConstants.CENTER);
+        		label2.setText(labelOutput);
+        		Font bigFont = new Font("sansserif",Font.PLAIN,16);
+        		label2.setFont(bigFont);
+        	
+        ImageIcon testImage = new ImageIcon("musicNotes.png");
+        imageLabel = new JLabel();
+        	imageLabel.setIcon(testImage);
+    	
+        // add buttons and labels to panels 
+        utilPanel.add(helpButton);
+        utilPanel.add(startButton);
+        utilPanel.add(resetButton);
+        utilPanel.add(tuneButton);
+       
+        outputPanel.setLayout(new BoxLayout(outputPanel, BoxLayout.Y_AXIS));
+        outputPanel.add(Box.createRigidArea(new Dimension(50,50)));
+        outputPanel.add(label1);
+        //outputPanel.add(Box.createHorizontalStrut(10));
+        outputPanel.add(label2);
+        
+        imagePanel.add(imageLabel);
+        
+        // add panels to frame
+        frame.getContentPane().add(BorderLayout.SOUTH, utilPanel);
+        frame.getContentPane().add(BorderLayout.CENTER, outputPanel);
+        frame.getContentPane().add(BorderLayout.EAST, imagePanel);
+        Container center = new Container();
+        
+        // create mixer buttons
+        Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
+		center.setLayout(new GridLayout(mixerInfo.length+1, 1));
+		JButton[] buttons = new JButton[mixerInfo.length];
+		for (int i = 0; i < mixerInfo.length; i++) {
+			buttons[i] = new JButton(i + ". "+mixerInfo[i]);
+			center.add(buttons[i]);
+			buttons[i].addActionListener(this);
+			
+			System.out.println(i + ". " + mixerInfo[i]);
+		
+		}
+		// add mixer buttons to frame
+		frame.getContentPane().add(BorderLayout.WEST, center);
+        
+        
+        frame.setSize(1500, 500);
+        frame.setVisible(true);
+    }
+ 
+    /**
+     * Action listeners respond to button events
+     */
+    public class StartListener implements ActionListener{
+    	    SoundRecordingUtil noteIDUtil = new SoundRecordingUtil();
+        public void actionPerformed(ActionEvent event){
+        	if (label1.getText().equals(" ")) {
+        		label1.setText("Select a mixer to begin.");
+        	} else {
+        		//call record audio method
+        		 
+        		             		noteIDUtil.setMixerChoice(mixerChoice);
+        		             		Thread noteIDThread = new Thread(new Runnable() {
+        		             			public void run() {
+        		             				try {
+        		 								noteIDUtil.start();
+        		 							} catch (LineUnavailableException e) {
+        		 								// TODO Auto-generated catch block
+        		 								e.printStackTrace();
+        		 							}
+        		         	    		}
+        		         	    	});
+        		             		if (startButton.getText().equals("Start")) {
+        		             			noteIDThread.start();
+        		             			startButton.setText("Stop");
+        		             		}
+        		             		else if (startButton.getText().equals("Stop")) {
+        		             			try {
+        		 							noteIDUtil.stop();
+        		 						} catch (IOException e) {
+        		 							// TODO Auto-generated catch block
+        		 							e.printStackTrace();
+        		 						}
+        		             			startButton.setText("Start");
+        		             		}
+        		   
+                label1.setText("Play: ");
+                label1.setHorizontalAlignment(SwingConstants.CENTER);
+                label1.setVerticalAlignment(SwingConstants.CENTER);
+                Prompt imageOutput = new Prompt();
+                ImageIcon icon = imageOutput.ImagePrompt();
+                imageLabel.setVisible(true);
+                imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                imageLabel.setVerticalAlignment(SwingConstants.CENTER);
+                imageLabel.setIcon(icon);
+     
+        		}
+        }
+    }
+    ///////// WORK ON RESET METHOD /////////
+    class ResetListener implements ActionListener{
+    	public void actionPerformed(ActionEvent event){
+    		//call reset method
+    		label1.setText("Cleared");
+    		label1.setHorizontalAlignment(SwingConstants.CENTER);
+        	label1.setVerticalAlignment(SwingConstants.CENTER);
+    		imageLabel.setVisible(false);
+    	}
+    }
+ 
+    class HelpListener implements ActionListener{
+        public void actionPerformed(ActionEvent event){
+        	// call Help method
+        	label1.setText("");
+        	imageLabel.setVisible(false);
+        	Help output = new Help();
+        	String labelOutput = output.getHelp();
+        	label2.setHorizontalAlignment(SwingConstants.CENTER);
+        	label2.setVerticalAlignment(SwingConstants.CENTER);
+        	label2.setText(labelOutput);
+    
+        }
+    }
+    
+    class TunerListener implements ActionListener {
+       	SoundRecordingUtil tuner = new SoundRecordingUtil();
+       	public void actionPerformed(ActionEvent event) {
+       		tuner.setMixerChoice(mixerChoice);
+       		Thread tuneThread = new Thread(new Runnable() {
+       			public void run() {
+       				tuner.runTuner();
+    	    		}
+    	    	});
+       		if (tuneButton.getText().equals("Tune")) {
+       			tuneThread.start();
+       			tuneButton.setText("Next String");
+       		}
+       		else {
+       			tuner.StringNo++;
+       		}
+       		if (tuner.StringNo > 5) {
+    				try {
+    					tuner.stop();
+    				} catch (IOException e) {
+    					e.printStackTrace();
+    				}
+    				tuneButton.setText("Tune");
+    				tuner.StringNo = 0;
+       		}
+       		
+       	}
+       }
+    
+    /**
+     * Get mixer choice from user
+     */
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		JButton buttonPressed = (JButton)e.getSource(); 
+		buttonPressed.setVisible(true);
+		mixerChoice = Integer.parseInt(buttonPressed.getText().substring(0,1));
+		output.recorder.setMixerChoice(mixerChoice);
+		label1.setText(buttonPressed.getText() + " selected. Ready to record.");
+		
+		
+	}
 }
+
